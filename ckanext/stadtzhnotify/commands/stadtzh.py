@@ -128,7 +128,7 @@ paster stadtzh send-diffs
 
     def _get_body(self):
         body = ''
-        diff_files = [f for f in os.listdir(self.diff_path) if not f.startswith(str(datetime.date.today()))]
+        diff_files = [f for f in os.listdir(self.diff_path) if f.startswith(str(datetime.date.today()))]
         for file_name in diff_files:
             with open(os.path.join(self.diff_path, file_name), 'r') as diff:
                 body += diff.read()
