@@ -1,5 +1,24 @@
-import ckan.lib.cli
+#coding: utf-8
+
 import sys
+import os
+import datetime
+import smtplib
+import uuid
+import ckan.lib.cli
+import paste.deploy.converters
+import logging
+from time import time
+from pylons import config
+from email.mime.text import MIMEText
+from email.header import Header
+from email import Utils
+from urlparse import urljoin
+from pylons.i18n.translation import _
+from ckan import model, __version__
+from ckan.lib.helpers import url_for
+
+log = logging.getLogger(__name__)
 
 class StadtzhCommand(ckan.lib.cli.CkanCommand):
     '''Command to send email notifications for activities
@@ -12,15 +31,20 @@ paster --plugin=ckanext-stadtzh-notify <command> -c <path to config file>
 # Show this help
 paster stadtzh help
 
+# Send a mail with metadata diffs from today
+paster stadtzh send-diffs
+
 '''
     summary = __doc__.split('\n')[0]
     usage = __doc__
+    diff_path = config.get('metadata.diffpath', '/vagrant/data/diffs')
 
     def command(self):
         # load pylons config
         self._load_config()
         options = {
             'help': self.helpCmd,
+            'send-diffs': self.sendDiffsCmd,
         }
 
         try:
@@ -32,3 +56,81 @@ paster stadtzh help
 
     def helpCmd(self):
         print self.__doc__
+
+    def sendDiffsCmd(self):
+        body = self._get_body()
+
+        # no body, no mail
+        if body:
+            recipient_email = config.get('recipient_email')
+            subject = "CKAN Diffs %s" % (str(datetime.date.today().strftime("%d.%m.%y")))
+            headers = {}
+            mail_from = config.get('smtp.mail_from', 'ckan@zuerich.ch')
+            msg = MIMEText(body, 'html', 'utf-8')
+            for k, v in headers.items(): msg[k] = v
+            subject = Header(subject.encode('utf-8'), 'utf-8')
+            msg['Subject'] = subject
+            msg['From'] = _("<%s>") % (mail_from)
+            recipient = u"<%s>" % (recipient_email)
+            msg['To'] = Header(recipient, 'utf-8')
+            msg['Date'] = Utils.formatdate(time())
+            msg['X-Mailer'] = "CKAN %s" % __version__
+
+            # Send the email using Python's smtplib.
+            smtp_connection = smtplib.SMTP()
+            if 'smtp.test_server' in config:
+                # If 'smtp.test_server' is configured we assume we're running tests,
+                # and don't use the smtp.server, starttls, user, password etc. options.
+                smtp_server = config['smtp.test_server']
+                smtp_starttls = False
+                smtp_user = None
+                smtp_password = None
+            else:
+                smtp_server = config.get('smtp.server', 'localhost')
+                smtp_starttls = paste.deploy.converters.asbool(
+                        config.get('smtp.starttls'))
+                smtp_user = config.get('smtp.user')
+                smtp_password = config.get('smtp.password')
+            smtp_connection.connect(smtp_server)
+            try:
+                # smtp_connection.set_debuglevel(True)
+
+                # Identify ourselves and prompt the server for supported features.
+                smtp_connection.ehlo()
+
+                # If 'smtp.starttls' is on in CKAN config, try to put the SMTP
+                # connection into TLS mode.
+                if smtp_starttls:
+                    if smtp_connection.has_extn('STARTTLS'):
+                        smtp_connection.starttls()
+                        # Re-identify ourselves over TLS connection.
+                        smtp_connection.ehlo()
+                    else:
+                        raise MailerException("SMTP server does not support STARTTLS")
+
+                # If 'smtp.user' is in CKAN config, try to login to SMTP server.
+                if smtp_user:
+                    assert smtp_password, ("If smtp.user is configured then "
+                            "smtp.password must be configured as well.")
+                    smtp_connection.login(smtp_user, smtp_password)
+
+                smtp_connection.sendmail(mail_from, [recipient_email], msg.as_string())
+                log.info("Sent email to {0}".format(recipient_email))
+
+            except smtplib.SMTPException, e:
+                msg = '%r' % e
+                log.exception(msg)
+                raise MailerException(msg)
+            finally:
+                smtp_connection.quit()
+        else:
+            log.info("No diffs to send on %s" % (str(datetime.date.today())))
+
+    def _get_body(self):
+        body = ''
+        diff_files = [f for f in os.listdir(self.diff_path) if not f.startswith(str(datetime.date.today()))]
+        for file_name in diff_files:
+            with open(os.path.join(self.diff_path, file_name), 'r') as diff:
+                body += diff.read()
+                log.debug('Diff read with filename: ' + f)
+        return body
