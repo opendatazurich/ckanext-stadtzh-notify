@@ -132,5 +132,5 @@ paster stadtzh send-diffs
         for file_name in diff_files:
             with open(os.path.join(self.diff_path, file_name), 'r') as diff:
                 body += diff.read()
-                log.debug('Diff read with filename: ' + f)
+                log.debug('Diff read with filename: ' + file_name)
         return body
