@@ -20,6 +20,11 @@ from ckan.lib.helpers import url_for
 
 log = logging.getLogger(__name__)
 
+
+class MailerException(Exception):
+    pass
+
+
 class StadtzhCommand(ckan.lib.cli.CkanCommand):
     '''Command to send email notifications for activities
 
