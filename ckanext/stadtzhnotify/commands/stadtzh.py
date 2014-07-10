@@ -42,7 +42,7 @@ paster stadtzh send-diffs
 '''
     summary = __doc__.split('\n')[0]
     usage = __doc__
-    diff_path = config.get('metadata.diffpath', '/vagrant/data/diffs')
+    diff_path = config.get('metadata.diffpath', '/usr/lib/ckan/diffs')
 
     def command(self):
         # load pylons config
