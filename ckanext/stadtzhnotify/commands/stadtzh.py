@@ -28,18 +28,18 @@ class MailerException(Exception):
 class StadtzhCommand(ckan.lib.cli.CkanCommand):
     '''Command to send email notifications for activities
 
-Usage:
+    Usage:
 
-# General usage
-paster --plugin=ckanext-stadtzh-notify <command> -c <path to config file>
+    # General usage
+    paster --plugin=ckanext-stadtzh-notify <command> -c <path to config file>
 
-# Show this help
-paster stadtzh help
+    # Show this help
+    paster stadtzh help
 
-# Send a mail with metadata diffs from today
-paster stadtzh send-diffs
+    # Send a mail with metadata diffs from today (default) or <days> ago
+    paster stadtzh send-diffs [<days>]
 
-'''
+    '''
     summary = __doc__.split('\n')[0]
     usage = __doc__
     diff_path = config.get('metadata.diffpath', '/usr/lib/ckan/diffs')
