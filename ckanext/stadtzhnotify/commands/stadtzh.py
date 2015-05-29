@@ -62,7 +62,7 @@ class StadtzhCommand(ckan.lib.cli.CkanCommand):
     def helpCmd(self):
         print self.__doc__
 
-    def sendDiffsCmd(self, days=1):
+    def sendDiffsCmd(self, days=0):
         days = int(days)
         diff_date = datetime.date.today() - datetime.timedelta(days)
         body = self._get_body(diff_date)
