@@ -62,13 +62,15 @@ paster stadtzh send-diffs
     def helpCmd(self):
         print self.__doc__
 
-    def sendDiffsCmd(self):
-        body = self._get_body()
+    def sendDiffsCmd(self, days=1):
+        days = int(days)
+        diff_date = datetime.date.today() - datetime.timedelta(days)
+        body = self._get_body(diff_date)
 
         # no body, no mail
         if body:
             recipient_email = config.get('recipient_email')
-            subject = "CKAN Diffs %s" % (str(datetime.date.today().strftime("%d.%m.%y")))
+            subject = "CKAN Diffs %s" % (str(diff_date.strftime("%d.%m.%y")))
             headers = {}
             mail_from = config.get('smtp.mail_from', 'ckan@zuerich.ch')
             msg = MIMEText(body, 'html', 'utf-8')
@@ -129,11 +131,11 @@ paster stadtzh send-diffs
             finally:
                 smtp_connection.quit()
         else:
-            log.info("No diffs to send on %s" % (str(datetime.date.today())))
+            log.info("No diffs to send on %s" % (str(diff_date)))
 
-    def _get_body(self):
+    def _get_body(self, diff_date):
         body = ''
-        diff_files = [f for f in os.listdir(self.diff_path) if f.startswith(str(datetime.date.today()))]
+        diff_files = [f for f in os.listdir(self.diff_path) if f.startswith(str(diff_date))]
         for file_name in diff_files:
             with open(os.path.join(self.diff_path, file_name), 'r') as diff:
                 body += diff.read()
