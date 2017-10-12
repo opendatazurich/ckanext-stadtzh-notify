@@ -18,8 +18,6 @@ from pylons.i18n.translation import _
 from ckan import model, __version__
 from ckan.lib.helpers import url_for
 
-log = logging.getLogger(__name__)
-
 
 class MailerException(Exception):
     pass
@@ -45,6 +43,9 @@ class StadtzhCommand(ckan.lib.cli.CkanCommand):
     diff_path = config.get('metadata.diffpath', '/usr/lib/ckan/diffs')
 
     def command(self):
+        # logging
+        self.log = logging.getLogger(__name__)
+
         # load pylons config
         self._load_config()
         options = {
@@ -122,16 +123,16 @@ class StadtzhCommand(ckan.lib.cli.CkanCommand):
                     smtp_connection.login(smtp_user, smtp_password)
 
                 smtp_connection.sendmail(mail_from, [recipient_email], msg.as_string())
-                log.info("Sent email to {0}".format(recipient_email))
+                self.log.info("Sent email to {0}".format(recipient_email))
 
             except smtplib.SMTPException, e:
                 msg = '%r' % e
-                log.exception(msg)
+                self.log.exception(msg)
                 raise MailerException(msg)
             finally:
                 smtp_connection.quit()
         else:
-            log.info("No diffs to send on %s" % (str(diff_date)))
+            self.log.info("No diffs to send on %s" % (str(diff_date)))
 
     def _get_body(self, diff_date):
         body = ''
@@ -139,5 +140,5 @@ class StadtzhCommand(ckan.lib.cli.CkanCommand):
         for file_name in diff_files:
             with open(os.path.join(self.diff_path, file_name), 'r') as diff:
                 body += diff.read()
-                log.debug('Diff read with filename: ' + file_name)
+                self.log.debug('Diff read with filename: ' + file_name)
         return body
