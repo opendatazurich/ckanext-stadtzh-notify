@@ -40,7 +40,7 @@ class StadtzhCommand(ckan.lib.cli.CkanCommand):
     '''
     summary = __doc__.split('\n')[0]
     usage = __doc__
-    diff_path = config.get('metadata.diffpath', '/usr/lib/ckan/diffs')
+    diff_path = None
 
     def command(self):
         # logging
@@ -48,11 +48,12 @@ class StadtzhCommand(ckan.lib.cli.CkanCommand):
 
         # load pylons config
         self._load_config()
+        self.diff_path = config.get('metadata.diffpath', '/usr/lib/ckan/diffs')
+
         options = {
             'help': self.helpCmd,
             'send-diffs': self.sendDiffsCmd,
         }
-
         try:
             cmd = self.args[0]
             options[cmd](*self.args[1:])
